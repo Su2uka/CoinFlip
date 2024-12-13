@@ -11,9 +11,11 @@
 
 3. 部分效果
    
-![image](https://github.com/user-attachments/assets/c58f5137-9af3-4b43-bcda-c4c7eeeb6985)
+![image](https://github.com/user-attachments/assets/de586fa3-0502-49d8-b828-0da7e7a18aac)
 
-![image](https://github.com/user-attachments/assets/40c0fabd-a47f-4736-bda4-e2b8aca46b7b)
+
+![image](https://github.com/user-attachments/assets/8b5db2a2-8be8-404d-8085-1a96cd0dd758)
+
 
    
 

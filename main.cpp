@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QApplication::setApplicationName(QStringLiteral("CoinFlip"));
     QApplication::setApplicationDisplayName(QStringLiteral("Mystic CoinFlip"));
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
-    app.setWindowIcon(QIcon(QStringLiteral(":/images/Coin0001.png")));
+    app.setWindowIcon(QIcon(QStringLiteral(":/images/coin_1.png")));
 
     MainWindow window;
     window.show();

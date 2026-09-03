@@ -1,12 +1,13 @@
 #ifndef CHOOSELEVELWIDGET_H
 #define CHOOSELEVELWIDGET_H
 
+#include <QPixmap>
 #include <QWidget>
 
 class IconButton;
 class QLabel;
 
-// 选关页：4×5 关卡按钮网格，锁定的关卡半透明置灰，悬停显示最佳成绩。
+// 选关页：4×5 玻璃徽章网格，锁定关卡弱化，悬停显示最佳成绩。
 class ChooseLevelWidget : public QWidget
 {
     Q_OBJECT
@@ -26,6 +27,7 @@ private:
     void buildUi();
     void refresh();
 
+    QPixmap m_background;
     IconButton *m_levelButtons[20] = {};
     QLabel *m_numberLabels[20] = {};
     QLabel *m_unlockedCountLabel = nullptr;

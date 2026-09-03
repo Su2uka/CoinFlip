@@ -1,12 +1,13 @@
 #ifndef MAINMENUWIDGET_H
 #define MAINMENUWIDGET_H
 
+#include <QPixmap>
 #include <QWidget>
 
 class IconButton;
 class QLabel;
 
-// 主菜单页：使用自带标题的 MenuSceneBg 背景 + 开始按钮。
+// 主菜单页：深空靛蓝背景 + 文字标题 + 金色开始按钮。
 class MainMenuWidget : public QWidget
 {
     Q_OBJECT
@@ -21,8 +22,8 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    QPixmap m_background;
     IconButton *m_startButton = nullptr;
-    QLabel *m_versionLabel = nullptr;
 };
 
 #endif // MAINMENUWIDGET_H

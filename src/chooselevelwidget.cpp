@@ -1,13 +1,14 @@
 #include "chooselevelwidget.h"
 
+#include <QFont>
 #include <QGraphicsDropShadowEffect>
 #include <QGraphicsOpacityEffect>
 #include <QLabel>
 #include <QPainter>
 #include <QTimer>
 
-#include "iconbutton.h"
 #include "formattime.h"
+#include "iconbutton.h"
 #include "leveldatabase.h"
 #include "progressmanager.h"
 #include "recordmanager.h"
@@ -18,79 +19,58 @@ constexpr int kWindowWidth = 390;
 constexpr int kWindowHeight = 570;
 constexpr int kLevelCount = LevelDatabase::kCount;
 
-// 与原教程一致的网格布局参数，但适配 390 宽的窗口。
-constexpr int kGridX0 = 58;
-constexpr int kGridY0 = 110;
-constexpr int kCellPitchX = 72;
-constexpr int kCellPitchY = 74;
-
-// 解锁关卡用不透明徽章贴图，锁定关卡保留半透明玻璃球素材。
-QPixmap solidLevelIcon()
-{
-    static const QPixmap pm(QStringLiteral(":/images/LevelIconSolid.png"));
-    return pm;
-}
-
-QPixmap glassLevelIcon()
-{
-    static const QPixmap pm(QStringLiteral(":/images/LevelIcon.png"));
-    return pm;
-}
+// 徽章网格：58px 徽章，4 列 5 行居中。
+constexpr int kBadgeSize = 58;
+constexpr int kGridX0 = 55;
+constexpr int kGridY0 = 118;
+constexpr int kCellPitchX = 74;
+constexpr int kCellPitchY = 76;
 } // namespace
 
 ChooseLevelWidget::ChooseLevelWidget(QWidget *parent)
     : QWidget(parent)
 {
     setFixedSize(kWindowWidth, kWindowHeight);
+    m_background.load(QStringLiteral(":/images/bg.png"));
     buildUi();
 }
 
 void ChooseLevelWidget::buildUi()
 {
     // 标题。
-    auto *titleLabel = new QLabel(QStringLiteral("选 择 关 卡"), this);
+    auto *titleLabel = new QLabel(QStringLiteral("选择关卡"), this);
     titleLabel->setAlignment(Qt::AlignCenter);
-    titleLabel->setGeometry(0, 22, kWindowWidth, 48);
-    QFont titleFont = titleLabel->font();
-    titleFont.setFamilies({QString::fromUtf8("华文新魏"), QStringLiteral("KaiTi"),
-                           QStringLiteral("Microsoft YaHei UI")});
-    titleFont.setPointSize(21);
-    titleFont.setBold(true);
+    titleLabel->setGeometry(0, 26, kWindowWidth, 44);
+    QFont titleFont(QStringLiteral("Microsoft YaHei UI"), 20, QFont::Bold);
+    titleFont.setLetterSpacing(QFont::AbsoluteSpacing, 6.0);
     titleLabel->setFont(titleFont);
-    titleLabel->setStyleSheet(QStringLiteral("color: #FFF7E6;"));
+    titleLabel->setStyleSheet(QStringLiteral("color: #F4F7FF;"));
     auto *titleShadow = new QGraphicsDropShadowEffect(titleLabel);
-    titleShadow->setBlurRadius(6);
-    titleShadow->setOffset(0, 2);
-    titleShadow->setColor(QColor(0, 0, 0, 150));
+    titleShadow->setBlurRadius(16);
+    titleShadow->setOffset(0, 3);
+    titleShadow->setColor(QColor(0, 0, 0, 170));
     titleLabel->setGraphicsEffect(titleShadow);
 
     // 解锁进度提示。
     m_unlockedCountLabel = new QLabel(this);
     m_unlockedCountLabel->setAlignment(Qt::AlignCenter);
-    m_unlockedCountLabel->setGeometry(0, 68, kWindowWidth, 24);
+    m_unlockedCountLabel->setGeometry(0, 70, kWindowWidth, 24);
     m_unlockedCountLabel->setStyleSheet(QStringLiteral(
-        "color: rgba(255, 247, 230, 175); font-size: 9.5pt; font-family: 'Microsoft YaHei UI';"));
+        "color: rgba(203, 213, 235, 165); font-size: 10pt;"
+        " font-family: 'Microsoft YaHei UI';"));
 
-    // 关卡按钮网格。
+    // 关卡徽章网格。
+    QFont numberFont(QStringLiteral("Segoe UI"), 14, QFont::Bold);
     for (int i = 0; i < kLevelCount; ++i) {
-        auto *button = new IconButton(QStringLiteral(":/images/LevelIconSolid.png"),
-                                      QString(), this);
+        auto *button = new IconButton(QStringLiteral(":/images/badge_level.png"), QString(), this);
         button->move(kGridX0 + (i % 4) * kCellPitchX, kGridY0 + (i / 4) * kCellPitchY);
 
         // 编号标签作为按钮的子控件，随悬停放大一起移动。
         auto *numberLabel = new QLabel(QString::number(i + 1), button);
-        numberLabel->setGeometry(0, 0, button->width(), button->height());
+        numberLabel->setGeometry(0, 0, button->width(), button->height() - 6);
         numberLabel->setAlignment(Qt::AlignCenter);
-        QFont numberFont = numberLabel->font();
-        numberFont.setPointSize(13);
-        numberFont.setBold(true);
         numberLabel->setFont(numberFont);
         numberLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
-        auto *numberShadow = new QGraphicsDropShadowEffect(numberLabel);
-        numberShadow->setBlurRadius(3);
-        numberShadow->setOffset(0, 1);
-        numberShadow->setColor(QColor(40, 24, 8, 170));
-        numberLabel->setGraphicsEffect(numberShadow);
 
         const int level = i + 1;
         connect(button, &QPushButton::clicked, this, [this, level] {
@@ -109,8 +89,7 @@ void ChooseLevelWidget::buildUi()
     }
 
     // 返回按钮。
-    auto *backButton = new IconButton(QStringLiteral(":/images/BackButton.png"),
-                                      QStringLiteral(":/images/BackButtonSelected.png"), this);
+    auto *backButton = new IconButton(QStringLiteral(":/images/btn_back.png"), QString(), this);
     backButton->move(kWindowWidth - backButton->width() - 14,
                      kWindowHeight - backButton->height() - 12);
     connect(backButton, &QPushButton::clicked, this, [this] {
@@ -135,10 +114,9 @@ void ChooseLevelWidget::refresh()
         const bool unlocked = progress.isUnlocked(level);
 
         button->setClickEnabled(unlocked);
-        button->setPixmap(unlocked ? solidLevelIcon() : glassLevelIcon());
         numberLabel->setStyleSheet(unlocked
-            ? QStringLiteral("color: #FFF7E6;")
-            : QStringLiteral("color: rgba(215, 205, 195, 0.8);"));
+            ? QStringLiteral("color: #F5C04C;")
+            : QStringLiteral("color: rgba(203, 213, 235, 90);"));
 
         if (unlocked) {
             button->setGraphicsEffect(nullptr);
@@ -154,9 +132,9 @@ void ChooseLevelWidget::refresh()
             }
             button->setToolTip(tip);
         } else {
-            // 锁定关卡：半透明弱化。
+            // 锁定关卡：整体弱化。
             auto *dimmer = new QGraphicsOpacityEffect(button);
-            dimmer->setOpacity(0.38);
+            dimmer->setOpacity(0.35);
             button->setGraphicsEffect(dimmer);
             button->setToolTip(QStringLiteral("通关第 %1 关后解锁").arg(level - 1));
         }
@@ -176,5 +154,6 @@ void ChooseLevelWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
-    painter.drawPixmap(0, 0, QPixmap(QStringLiteral(":/images/OtherSceneBg.png")));
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(rect(), m_background, QRectF(m_background.rect()));
 }

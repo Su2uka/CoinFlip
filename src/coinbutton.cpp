@@ -5,7 +5,8 @@
 
 namespace {
 constexpr int kFrameCount = 8;
-constexpr int kFrameMs = 28;
+constexpr int kFrameMs = 26;
+constexpr int kCoinSize = 56;
 } // namespace
 
 CoinButton::CoinButton(int row, int col, bool goldFace, QWidget *parent)
@@ -19,9 +20,9 @@ CoinButton::CoinButton(int row, int col, bool goldFace, QWidget *parent)
         "QPushButton:pressed { background-color: transparent; }"));
 
     for (int i = 0; i < kFrameCount; ++i)
-        m_frames[i].load(QStringLiteral(":/images/Coin000%1.png").arg(i + 1));
+        m_frames[i].load(QStringLiteral(":/images/coin_%1.png").arg(i + 1));
 
-    setFixedSize(m_frames[0].size());
+    setFixedSize(kCoinSize, kCoinSize);
     setFrame(m_gold ? 1 : kFrameCount);
 
     m_frameTimer.setInterval(kFrameMs);

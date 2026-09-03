@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     setFixedSize(390, 570);
     // 页面淡入淡出过渡时的底色（用 palette 而非全局样式表，避免被子控件继承）。
     QPalette windowPalette = palette();
-    windowPalette.setColor(QPalette::Window, QColor(0x2A, 0x1A, 0x0E));
+    windowPalette.setColor(QPalette::Window, QColor(0x0C, 0x10, 0x22));
     setPalette(windowPalette);
     setAutoFillBackground(true);
 

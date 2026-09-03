@@ -1,6 +1,7 @@
 #ifndef PLAYWIDGET_H
 #define PLAYWIDGET_H
 
+#include <QPixmap>
 #include <QList>
 #include <QPointer>
 #include <QTimer>
@@ -42,6 +43,7 @@ private:
 
     int m_level = 1;
     int m_session = 0; // 每次 startLevel/restartLevel 递增，用于丢弃过期的定时器回调
+    QPixmap m_background;
     int m_board[4][4] = {};
     CoinButton *m_coins[4][4] = {};
 

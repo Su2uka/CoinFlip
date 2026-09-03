@@ -1,5 +1,7 @@
 #include "playwidget.h"
 
+#include <QFont>
+#include <QGraphicsDropShadowEffect>
 #include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -20,29 +22,36 @@
 namespace {
 constexpr int kWindowWidth = 390;
 constexpr int kWindowHeight = 570;
-constexpr int kCellPitch = 52;      // 50px 底座 + 2px 间隙
-constexpr int kBoardX0 = 92;        // (390 - (3*52 + 50)) / 2
-constexpr int kBoardY0 = 190;
-constexpr int kNeighborDelayMs = 160;
-constexpr int kFlipTotalMs = 260;   // 8 帧 × 28ms，留一点余量
-constexpr int kBannerWidth = 241;
-constexpr int kBannerHeight = 84;
-constexpr int kBannerX = (kWindowWidth - kBannerWidth) / 2;
-constexpr int kBannerY = 208;
 
-const char *kPillButtonStyle =
-    "QPushButton { background-color: #FFEDC2; color: #6B4416; border: none;"
+// 棋盘：60px 槽位 + 4px 间隙，4×4 居中；金币 56px 叠于槽位内。
+constexpr int kSlotSize = 60;
+constexpr int kCellPitch = 64;
+constexpr int kBoardX0 = (kWindowWidth - (3 * kCellPitch + kSlotSize)) / 2; // 69
+constexpr int kBoardY0 = 168;
+constexpr int kCoinInset = 2;
+
+constexpr int kNeighborDelayMs = 160;
+constexpr int kFlipTotalMs = 230;   // 8 帧 × 26ms，留一点余量
+
+constexpr int kBannerWidth = 300;
+constexpr int kBannerHeight = 64;
+constexpr int kBannerX = (kWindowWidth - kBannerWidth) / 2;
+constexpr int kBannerY = 206;
+
+// 金色胶囊按钮（游戏中与结算面板共用）。
+const char *kGoldButtonStyle =
+    "QPushButton { background-color: #F5B93B; color: #241703; border: none;"
     "  border-radius: 17px; padding: 0 14px; min-height: 32px;"
     "  font-family: 'Microsoft YaHei UI'; font-size: 11.5pt; font-weight: bold; }"
-    "QPushButton:hover { background-color: #FFF6DA; }"
-    "QPushButton:pressed { background-color: #EBD8A9; }"
-    "QPushButton:disabled { color: #B49B74; }";
+    "QPushButton:hover { background-color: #FFC94F; }"
+    "QPushButton:pressed { background-color: #D89A2B; }";
 } // namespace
 
 PlayWidget::PlayWidget(QWidget *parent)
     : QWidget(parent)
 {
     setFixedSize(kWindowWidth, kWindowHeight);
+    m_background.load(QStringLiteral(":/images/bg.png"));
     buildUi();
 
     m_clock.setInterval(1000);
@@ -66,48 +75,52 @@ PlayWidget::PlayWidget(QWidget *parent)
 
 void PlayWidget::buildUi()
 {
-    // 顶部：关卡名 + 计时/步数面板。
+    // 顶部：关卡名。
     m_levelLabel = new QLabel(this);
     m_levelLabel->setGeometry(20, 12, 180, 44);
-    QFont levelFont = m_levelLabel->font();
-    levelFont.setFamilies({QString::fromUtf8("华文新魏"), QStringLiteral("KaiTi"),
-                           QStringLiteral("Microsoft YaHei UI")});
-    levelFont.setPointSize(19);
-    levelFont.setBold(true);
+    QFont levelFont(QStringLiteral("Microsoft YaHei UI"), 18, QFont::Bold);
     m_levelLabel->setFont(levelFont);
-    m_levelLabel->setStyleSheet(QStringLiteral("color: #FFF7E6;"));
+    m_levelLabel->setStyleSheet(QStringLiteral("color: #F4F7FF;"));
     auto *levelShadow = new QGraphicsDropShadowEffect(m_levelLabel);
-    levelShadow->setBlurRadius(6);
-    levelShadow->setOffset(0, 2);
-    levelShadow->setColor(QColor(0, 0, 0, 150));
+    levelShadow->setBlurRadius(14);
+    levelShadow->setOffset(0, 3);
+    levelShadow->setColor(QColor(0, 0, 0, 170));
     m_levelLabel->setGraphicsEffect(levelShadow);
 
+    // 计时/步数面板（深色玻璃）。
     auto *statPanel = new QWidget(this);
     statPanel->setObjectName(QStringLiteral("statPanel"));
     statPanel->setAttribute(Qt::WA_StyledBackground, true); // 让 QWidget 绘制样式表背景
-    statPanel->setGeometry(kWindowWidth - 150 - 14, 12, 150, 54);
+    statPanel->setGeometry(kWindowWidth - 150 - 16, 14, 150, 56);
     statPanel->setStyleSheet(QStringLiteral(
-        "#statPanel { background-color: rgba(255, 248, 230, 150); border-radius: 10px; }"
-        "#statPanel QLabel { color: #4A2F14; font-family: 'Microsoft YaHei UI';"
-        "  font-size: 11pt; font-weight: 600; }"));
+        "#statPanel { background-color: rgba(13, 18, 40, 165);"
+        "  border: 1px solid rgba(255, 255, 255, 38); border-radius: 12px; }"
+        "#statPanel QLabel { color: #DEE6F5; font-family: 'Microsoft YaHei UI';"
+        "  font-size: 10.5pt; font-weight: 600; }"));
     m_timeLabel = new QLabel(statPanel);
     m_stepsLabel = new QLabel(statPanel);
     auto *statLayout = new QVBoxLayout(statPanel);
-    statLayout->setContentsMargins(12, 7, 12, 7);
+    statLayout->setContentsMargins(14, 8, 14, 8);
     statLayout->setSpacing(1);
     statLayout->addWidget(m_timeLabel);
     statLayout->addWidget(m_stepsLabel);
 
-    // 棋盘：底座 + 金币。
+    // 棋盘：槽位（深色玻璃凹槽）+ 金币。
     for (int r = 0; r < LevelDatabase::kRows; ++r) {
         for (int c = 0; c < LevelDatabase::kCols; ++c) {
             auto *node = new QLabel(this);
-            node->setPixmap(QPixmap(QStringLiteral(":/images/BoardNode(1).png")));
-            node->setGeometry(kBoardX0 + c * kCellPitch, kBoardY0 + r * kCellPitch, 50, 50);
+            node->setObjectName(QStringLiteral("boardSlot"));
+            node->setAttribute(Qt::WA_StyledBackground, true);
+            node->setGeometry(kBoardX0 + c * kCellPitch, kBoardY0 + r * kCellPitch,
+                              kSlotSize, kSlotSize);
+            node->setStyleSheet(QStringLiteral(
+                "#boardSlot { background-color: rgba(8, 12, 26, 150);"
+                "  border: 1px solid rgba(255, 255, 255, 26); border-radius: 14px; }"));
             node->setAttribute(Qt::WA_TransparentForMouseEvents);
 
             auto *coin = new CoinButton(r, c, false, this);
-            coin->move(kBoardX0 + c * kCellPitch + 2, kBoardY0 + r * kCellPitch + 2);
+            coin->move(kBoardX0 + c * kCellPitch + kCoinInset,
+                       kBoardY0 + r * kCellPitch + kCoinInset);
             connect(coin, &QPushButton::clicked, this,
                     [this, coin] {
                         if (coin->tryActivate())
@@ -117,10 +130,10 @@ void PlayWidget::buildUi()
         }
     }
 
-    // 底部：重开 + 返回。
+    // 底部：重玩 + 返回。
     auto *restartButton = new QPushButton(QStringLiteral("重玩"), this);
-    restartButton->setStyleSheet(kPillButtonStyle);
-    restartButton->setGeometry(16, kWindowHeight - 48, 88, 34);
+    restartButton->setStyleSheet(kGoldButtonStyle);
+    restartButton->setGeometry(16, kWindowHeight - 50, 92, 34);
     restartButton->setToolTip(QStringLiteral("重新开始本关（F5）"));
     restartButton->setCursor(Qt::PointingHandCursor);
     connect(restartButton, &QPushButton::clicked, this, [this] {
@@ -128,33 +141,42 @@ void PlayWidget::buildUi()
         restartLevel();
     });
 
-    auto *backButton = new IconButton(QStringLiteral(":/images/BackButton.png"),
-                                      QStringLiteral(":/images/BackButtonSelected.png"), this);
-    backButton->move(kWindowWidth - backButton->width() - 14, kWindowHeight - 44);
+    auto *backButton = new IconButton(QStringLiteral(":/images/btn_back.png"), QString(), this);
+    backButton->move(kWindowWidth - backButton->width() - 14,
+                     kWindowHeight - backButton->height() - 12);
     connect(backButton, &QPushButton::clicked, this, [this] {
         SoundPlayer::play(SoundPlayer::Id::Back);
         emit backRequested();
     });
 
     // 通关横幅与结算面板（平时隐藏）。
-    m_bannerLabel = new QLabel(this);
-    m_bannerLabel->setPixmap(QPixmap(QStringLiteral(":/images/LevelCompletedDialogBg.png")));
+    m_bannerLabel = new QLabel(QStringLiteral("★ 通关成功 ★"), this);
+    m_bannerLabel->setObjectName(QStringLiteral("winBanner"));
+    m_bannerLabel->setAttribute(Qt::WA_StyledBackground, true);
+    m_bannerLabel->setAlignment(Qt::AlignCenter);
+    QFont bannerFont(QStringLiteral("Microsoft YaHei UI"), 15, QFont::Bold);
+    bannerFont.setLetterSpacing(QFont::AbsoluteSpacing, 3.0);
+    m_bannerLabel->setFont(bannerFont);
+    m_bannerLabel->setStyleSheet(QStringLiteral(
+        "#winBanner { background-color: rgba(13, 18, 40, 226);"
+        "  border: 2px solid #F5B93B; border-radius: 18px; color: #FFD766; }"));
     m_bannerLabel->setGeometry(kBannerX, -kBannerHeight - 8, kBannerWidth, kBannerHeight);
     m_bannerLabel->hide();
 
     m_resultPanel = new QWidget(this);
     m_resultPanel->setObjectName(QStringLiteral("winPanel"));
     m_resultPanel->setAttribute(Qt::WA_StyledBackground, true);
-    m_resultPanel->setGeometry(35, 316, 320, 156);
+    m_resultPanel->setGeometry(35, 310, 320, 172);
     m_resultPanel->setStyleSheet(QStringLiteral(
-        "#winPanel { background-color: rgba(46, 30, 16, 205); border-radius: 14px; }"
-        "#winPanel QLabel { color: #FFF6E3; font-family: 'Microsoft YaHei UI';"
-        "  font-size: 12pt; font-weight: 600; }"
-        "#winPanel QPushButton { background-color: #FFEDC2; color: #6B4416; border: none;"
-        "  border-radius: 17px; padding: 0 12px; min-height: 34px;"
-        "  font-family: 'Microsoft YaHei UI'; font-size: 11.5pt; font-weight: bold; }"
-        "#winPanel QPushButton:hover { background-color: #FFF6DA; }"
-        "#winPanel QPushButton:pressed { background-color: #EBD8A9; }"));
+        "#winPanel { background-color: rgba(13, 18, 40, 238);"
+        "  border: 1px solid rgba(255, 255, 255, 40); border-radius: 18px; }"
+        "#winPanel QLabel { color: #EDF2FC; font-family: 'Microsoft YaHei UI';"
+        "  font-size: 11.5pt; font-weight: 600; }"
+        "#winPanel QPushButton { background-color: #F5B93B; color: #241703; border: none;"
+        "  border-radius: 16px; padding: 0 10px; min-height: 32px;"
+        "  font-family: 'Microsoft YaHei UI'; font-size: 11pt; font-weight: bold; }"
+        "#winPanel QPushButton:hover { background-color: #FFC94F; }"
+        "#winPanel QPushButton:pressed { background-color: #D89A2B; }"));
     m_resultLabel = new QLabel(m_resultPanel);
     m_resultLabel->setAlignment(Qt::AlignCenter);
 
@@ -422,5 +444,6 @@ void PlayWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
-    painter.drawPixmap(0, 0, QPixmap(QStringLiteral(":/images/PlayLevelSceneBg.png")));
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(rect(), m_background, QRectF(m_background.rect()));
 }

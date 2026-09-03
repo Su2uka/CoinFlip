@@ -1,5 +1,23 @@
+# 构建输出
+build/
+dist/
+out/
 cmake-build-*/
 
-.idea
+# IDE
+.idea/
+.vs/
+.vscode/
+*.user
 
+# 编译产物
+*.obj
+*.exe
+*.dll
+*.zip
+CMakeLists.txt.user*
 
+# 日志与临时文件
+*.log
+debug.log
+runtime.log

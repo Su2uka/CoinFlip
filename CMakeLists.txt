@@ -1,69 +1,75 @@
-cmake_minimum_required(VERSION 3.24)
-project(CoinFlip)
+cmake_minimum_required(VERSION 3.21)
+
+project(CoinFlip VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
-set(CMAKE_AUTOUIC_SEARCH_PATHS ${PROJECT_SOURCE_DIR}/form)
+# 可由 CI 覆盖：cmake -DAPP_VERSION=v1.2.3
+set(APP_VERSION "1.0.0" CACHE STRING "Application version string")
 
-set(CMAKE_PREFIX_PATH "E:/Qt/6.5.3/mingw_64")
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+qt_standard_project_setup()
 
-FILE(GLOB_RECURSE RC_FILES ${PROJECT_SOURCE_DIR}/resource/*.rc)
-
-FILE(GLOB_RECURSE QRC_FILES ${PROJECT_SOURCE_DIR}/resource/*.qrc)
-
-FILE(GLOB_RECURSE UI_FILES ${PROJECT_SOURCE_DIR}/form/*.ui)
-
-FILE(GLOB_RECURSE HEADER_FILES ${PROJECT_SOURCE_DIR}/include/*.h)
-
-aux_source_directory(${PROJECT_SOURCE_DIR}/src SOURCE_FILES)
-
-find_package(Qt6 COMPONENTS
-        Core
-        Gui
-        Widgets
-        Multimedia
-        REQUIRED)
-
-add_executable(CoinFlip main.cpp  ${SOURCE_FILES} ${UI_FILES} ${RC_FILES} ${QRC_FILES} ${HEADER_FILES})
-target_link_libraries(CoinFlip
-        Qt::Core
-        Qt::Gui
-        Qt::Widgets
-        Qt6::Multimedia
+set(COINFLIP_SOURCES
+    main.cpp
+    src/mainwindow.cpp
+    src/mainmenuwidget.cpp
+    src/chooselevelwidget.cpp
+    src/playwidget.cpp
+    src/iconbutton.cpp
+    src/coinbutton.cpp
+    src/soundplayer.cpp
+    src/leveldatabase.cpp
+    src/progressmanager.cpp
+    src/recordmanager.cpp
 )
 
-if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(DEBUG_SUFFIX)
-    if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
-        set(DEBUG_SUFFIX "d")
-    endif ()
-    set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
-    if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-        set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        endif ()
-    endif ()
-    if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E make_directory
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
-    endif ()
-    foreach (QT_LIB Core Gui Widgets)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-    endforeach (QT_LIB)
-endif ()
+set(COINFLIP_HEADERS
+    include/mainwindow.h
+    include/mainmenuwidget.h
+    include/chooselevelwidget.h
+    include/playwidget.h
+    include/iconbutton.h
+    include/coinbutton.h
+    include/soundplayer.h
+    include/leveldatabase.h
+    include/progressmanager.h
+    include/recordmanager.h
+)
 
-#set(CMAKE_BUILD_TYPE Release)
+qt_add_executable(CoinFlip WIN32
+    ${COINFLIP_SOURCES}
+    ${COINFLIP_HEADERS}
+    resource/res.qrc
+)
+
+target_include_directories(CoinFlip PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(CoinFlip PRIVATE APP_VERSION="${APP_VERSION}")
+
+if(MSVC)
+    # 源码为 UTF-8（含中文字符串字面量）
+    target_compile_options(CoinFlip PRIVATE /utf-8)
+endif()
+
+target_link_libraries(CoinFlip PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Multimedia
+)
+
+if(WIN32)
+    # Windows 版本信息 + 应用图标（.ico 路径写入生成的 rc，避免 windres 相对路径问题）
+    string(REPLACE "." "," COINFLIP_VERSION_COMMA ${PROJECT_VERSION})
+    configure_file(resource/CoinFlip.rc.in ${CMAKE_CURRENT_BINARY_DIR}/CoinFlip.rc @ONLY)
+    target_sources(CoinFlip PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/CoinFlip.rc)
+endif()
+
+install(TARGETS CoinFlip
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION .
+)

@@ -26,8 +26,11 @@ MainMenuWidget::MainMenuWidget(QWidget *parent)
         emit startRequested();
     });
 
-    // 版本号。
-    m_versionLabel = new QLabel(QStringLiteral("v" APP_VERSION), this);
+    // 版本号（标签自身带 v 前缀，避免与 v1.0.0 形式的版本号叠加成 "vv"）。
+    QString version = QStringLiteral(APP_VERSION);
+    if (!version.startsWith(QLatin1Char('v')))
+        version.prepend(QLatin1Char('v'));
+    m_versionLabel = new QLabel(version, this);
     m_versionLabel->move(12, kWindowHeight - 28);
     m_versionLabel->setStyleSheet(QStringLiteral(
         "color: rgba(255, 247, 230, 190); font-size: 9pt; font-family: 'Microsoft YaHei UI';"));
